@@ -1,0 +1,164 @@
+#include <iostream>
+#include <string>
+#include <memory>
+#include <stdexcept>
+#include <limits>
+#include <cmath>
+#include <algorithm>
+
+using namespace std;
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double calculateArea() const = 0;
+    virtual string getName() const = 0;
+    virtual void inputParameters() = 0;
+};
+
+class Square : public Shape {
+private:
+    double side;
+
+public:
+    double calculateArea() const override {
+        return side * side;
+    }
+
+    string getName() const override {
+        return "Квадрат";
+    }
+
+    void inputParameters() override {
+        cout << "Введите длину стороны квадрата: ";
+        cin >> side;
+
+        if (cin.fail() || side <= 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            throw invalid_argument("Ошибка: длина стороны должна быть положительным числом!");
+        }
+    }
+};
+
+class PentagonPP : public Shape {
+private:
+    double side;
+
+public:
+    double calculateArea() const override {
+
+        return (1.0 / 4.0) * sqrt(5 * (5 + 2 * sqrt(5))) * side * side;
+    }
+
+    string getName() const override {
+        return "Пентагон - ПП";
+    }
+
+    void inputParameters() override {
+        cout << "Введите длину стороны пятиугольника: ";
+        cin >> side;
+
+        if (cin.fail() || side <= 0) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            throw invalid_argument("Ошибка: длина стороны должна быть положительным числом!");
+        }
+    }
+};
+
+class ShapeFactory {
+public:
+    static unique_ptr<Shape> createShape(const string& shapeName) {
+        string lowerName = shapeName;
+        transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+        if (lowerName == "квадрат" || lowerName == "kvadrat") {
+            return make_unique<Square>();
+        }
+        else if (lowerName == "пентагон" || lowerName == "pentagon" || lowerName == "пятиугольник") {
+            return make_unique<PentagonPP>();
+        }
+        else {
+            throw invalid_argument("Неизвестный тип фигуры: " + shapeName);
+        }
+    }
+
+    static bool isValidShape(const string& shapeName) {
+        string lowerName = shapeName;
+        transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+        return (lowerName == "квадрат" || lowerName == "kvadrat" ||
+            lowerName == "пентагон" || lowerName == "pentagon" ||
+            lowerName == "пятиугольник" ||
+            lowerName == "выход" || lowerName == "exit" || lowerName == "quit");
+    }
+};
+string getSafeStringInput(const string& prompt) {
+    string input;
+    while (true) {
+        cout << prompt;
+        getline(cin, input);
+
+        if (input.empty()) {
+            cout << "Ошибка: ввод не может быть пустым!" << endl;
+        }
+        else {
+            transform(input.begin(), input.end(), input.begin(), ::tolower);
+            return input;
+        }
+    }
+}
+
+void displayMenu() {
+    cout << "\n КАЛЬКУЛЯТОР ПЛОЩАДЕЙ ФИГУР " << endl;
+    cout << "Доступные фигуры:" << endl;
+    cout << "- квадрат (kvadrat)" << endl;
+    cout << "- пентагон (pentagon)" << endl;
+    cout << "- выход (exit)" << endl;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+
+    cout << "КАЛЬКУЛЯТОР ПЛОЩАДЕЙ ФИГУР " << endl;
+
+    while (true) {
+        try {
+            displayMenu();
+            string choice = getSafeStringInput("Введите название фигуры: ");
+
+            // Проверка на выход
+            if (choice == "выход" || choice == "exit" || choice == "quit") {
+                cout << "Выход из программы." << endl;
+                break;
+            }
+
+            // Проверка корректности ввода
+            if (!ShapeFactory::isValidShape(choice)) {
+                cout << "Ошибка: неизвестная фигура! Доступные варианты: квадрат, пентагон" << endl;
+                continue;
+            }
+
+            unique_ptr<Shape> shape = ShapeFactory::createShape(choice);
+
+            // Получаем правильное название для отображения
+            string displayName = shape->getName();
+            cout << "\n=== " << displayName << " ===" << endl;
+
+            shape->inputParameters();
+            double area = shape->calculateArea();
+
+            cout << "\n РЕЗУЛЬТАТ:" << endl;
+            cout << "Фигура: " << shape->getName() << endl;
+            cout << "Площадь: " << area << endl;
+
+        }
+        catch (const exception& e) {
+            cout << "Ошибка: " << e.what() << endl;
+            cout << "Попробуйте еще раз." << endl;
+        }
+    }
+
+    return 0;
+}
